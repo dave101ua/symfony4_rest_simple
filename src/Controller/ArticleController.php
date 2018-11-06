@@ -36,16 +36,14 @@ class ArticleController extends AbstractController
     }
 
     /**
-     * @Rest\Put("/article/{id}")
+     * @Rest\Put("/article/{slug}")
      */
     public function articleUpdate($slug, Request $request)
     {
 
         $doctrine = $this->getDoctrine();
         $repository = $doctrine->getRepository(Article::class);
-
         $article = $repository->find($slug);
-        //var_dump($article);
 
         if (empty($article)){
             $response_status  = Response::HTTP_BAD_GATEWAY;
@@ -66,8 +64,6 @@ class ArticleController extends AbstractController
             $response_status
         ]);
     }
-
-
 
     /**
      * @Rest\Get("/articles")
@@ -101,8 +97,6 @@ class ArticleController extends AbstractController
         $name = $request->get('name');
         $description = $request->get('description');
 
-
-
         if (empty($name)){
             return new JsonResponse(['name is empty'], Response::HTTP_BAD_REQUEST);
         }
@@ -122,8 +116,24 @@ class ArticleController extends AbstractController
         }
 
     }
+    /**
+     * @Rest\Delete("/article/{id}")
+     */
+    public function deleteArticleAction($id){
 
+        $entityManager = $this->getDoctrine()->getManager();
+        $article = $entityManager->getRepository(Article::class)->find($id);
 
-
+        if (empty($article)){
+            $status = Response::HTTP_NOT_FOUND;
+        }else{
+            $entityManager->remove($article);
+            $entityManager->flush();
+            $status = Response::HTTP_OK;
+        }
+        return $this->json([
+            []
+        ], $status);
+    }
 
 }
