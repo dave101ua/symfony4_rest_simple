@@ -19,17 +19,27 @@ class ArticleRepository extends ServiceEntityRepository
         parent::__construct($registry, Article::class);
     }
 
+    public function getShortDataQuery()
+    {
+        return $this->createQueryBuilder('a')
+            ->select('a.id, a.name, a.date_created')
+            ->getQuery();
+    }
+
     /**
      * @return array
      */
     public function getShortData(): array
     {
+        return $this->getShortDataQuery()->execute();
+    }
 
-        $qb = $this->createQueryBuilder('a')
-            ->select('a.id, a.name, a.date_created')
+    public function getFullDataQuery()
+    {
+
+        return $this->createQueryBuilder('a')
+            ->select('a.id, a.name, a.description, a.date_created')
             ->getQuery();
-
-        return $qb->execute();
     }
 
     /**
@@ -38,11 +48,7 @@ class ArticleRepository extends ServiceEntityRepository
     public function getFullData(): array
     {
 
-        $qb = $this->createQueryBuilder('a')
-            ->select('a.id, a.name, a.description, a.date_created')
-            ->getQuery();
-
-        return $qb->execute();
+        return $this->getFullDataQuery()->execute();
     }
 
 //    /**

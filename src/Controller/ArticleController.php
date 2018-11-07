@@ -24,10 +24,10 @@ class ArticleController extends AbstractController
         $repository = $doctrine->getRepository(Article::class);
         $article = $repository->find($id);
 
-        if (empty($article)){
-            $response_status  = Response::HTTP_BAD_GATEWAY;
-        }else{
-            $response_status  = Response::HTTP_OK;
+        if (empty($article)) {
+            $response_status = Response::HTTP_BAD_GATEWAY;
+        } else {
+            $response_status = Response::HTTP_OK;
         }
         return $this->json([
             $article,
@@ -45,10 +45,10 @@ class ArticleController extends AbstractController
         $repository = $doctrine->getRepository(Article::class);
         $article = $repository->find($slug);
 
-        if (empty($article)){
-            $response_status  = Response::HTTP_BAD_GATEWAY;
+        if (empty($article)) {
+            $response_status = Response::HTTP_BAD_GATEWAY;
 
-        }else{
+        } else {
             $name = $request->get('name');
             $description = $request->get('description');
             $article->setName($name);
@@ -57,7 +57,7 @@ class ArticleController extends AbstractController
             $em->persist($article);
             $em->flush();
 
-            $response_status  = Response::HTTP_OK;
+            $response_status = Response::HTTP_OK;
         }
         return $this->json([
             $article,
@@ -71,16 +71,28 @@ class ArticleController extends AbstractController
     public function articles(Request $request)
     {
         $repository = $this->getDoctrine()->getRepository(Article::class);
+        $query = ($repository->createQueryBuilder('a')
+            ->select('a.id, a.name, a.date_created')
+            ->getQuery());
 
 
-        if ($request->get('short')==1){
-            $article = $repository->getShortData();
-        }else{
-            $article = $repository->getFullData();
+        if ($request->get('short') == 1) {
+            $query = $repository->getShortDataQuery();
+        } else {
+            $query = $repository->getFullDataQuery();
         }
 
+        $paginator = new Paginator();
+        $pagination = $paginator->paginate(
+            $query, /* query NOT result */
+            $request->query->getInt('page', 1)/*page number*/,
+            2/*limit per page*/
+        );
+
+        $articles = $pagination->getItems();
+
         return $this->json([
-            $article
+            $articles
         ]);
 
     }
@@ -90,24 +102,23 @@ class ArticleController extends AbstractController
      * @Rest\Post("/article")
      * @param Request $request
      */
-    public function postArticleAction(Request $request){
+    public function postArticleAction(Request $request)
+    {
 
         $article = new Article();
 
         $name = $request->get('name');
         $description = $request->get('description');
 
-        if (empty($name)){
+        if (empty($name)) {
             return new JsonResponse(['name is empty'], Response::HTTP_BAD_REQUEST);
-        }
-        elseif (empty($description)){
+        } elseif (empty($description)) {
             return new JsonResponse(['description is empty'], Response::HTTP_BAD_REQUEST);
-        }
-        else{
+        } else {
             $article->setName($name);
 
             $article->setDescription($description);
-            $article->setDateCreated( new \DateTime());
+            $article->setDateCreated(new \DateTime());
             $em = $this->getDoctrine()->getManager();
             $em->persist($article);
             $em->flush();
@@ -116,17 +127,19 @@ class ArticleController extends AbstractController
         }
 
     }
+
     /**
      * @Rest\Delete("/article/{id}")
      */
-    public function deleteArticleAction($id){
+    public function deleteArticleAction($id)
+    {
 
         $entityManager = $this->getDoctrine()->getManager();
         $article = $entityManager->getRepository(Article::class)->find($id);
 
-        if (empty($article)){
+        if (empty($article)) {
             $status = Response::HTTP_NOT_FOUND;
-        }else{
+        } else {
             $entityManager->remove($article);
             $entityManager->flush();
             $status = Response::HTTP_OK;
